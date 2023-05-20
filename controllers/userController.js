@@ -1,0 +1,112 @@
+const jwt = require("jsonwebtoken");
+const bcrypt = require("bcryptjs");
+const asyncHandler = require("express-async-handler");
+const UserModel = require("../models/userModel");
+
+//@desc Register new user
+//@route POST /api/users
+//@access Public
+const registerUser = asyncHandler(async (req, res) => {
+  const { name, email, password } = req.body;
+  if (!name || !email || !password) {
+    res.status(400);
+    throw new Error("Please fill all the fields");
+  }
+
+  // Check User Exists
+  const userExists = await UserModel.findOne({ email });
+  if (userExists) {
+    res.status(400);
+    throw new Error("User already exists");
+  }
+
+  // Hash Password
+  const salt = await bcrypt.genSalt(10);
+  const hashedPassword = await bcrypt.hash(password, salt);
+
+  // Create User
+  const user = await UserModel.create({
+    name,
+    email,
+    password: hashedPassword,
+  });
+
+  if (user) {
+    res.status(201).json({
+      _id: user.id,
+      name: user.name,
+      email: user.email,
+      token: generateToken(user._id),
+    });
+  } else {
+    res.status(400);
+    throw new Error("Invalid User data");
+  }
+});
+
+//@desc Authenticate a user
+//@route POST /api/users/login
+//@access Public
+const loginUser = asyncHandler(async (req, res) => {
+  const { email, password } = req.body;
+  if (!email || !password) {
+    res.status(400);
+    throw new Error("Invalid credentials!");
+  }
+  const user = await UserModel.findOne({ email });
+
+  if (user && (await bcrypt.compare(password, user.password))) {
+    res.status(201).json({
+      _id: user.id,
+      name: user.name,
+      email: user.email,
+      token: generateToken(user._id),
+    });
+  } else {
+    res.status(400);
+    throw new Error("User Not found!");
+  }
+});
+
+//@desc update user data
+//@route POST /api/users/update
+//@access Private
+const updateUser = asyncHandler(async (req, res) => {
+  const { customer, email } = req.body;
+  try {
+    // Find the user by their ID
+    const user = await UserModel.findOne({ email });
+
+    if (!user) {
+      throw new Error("User not found");
+    }
+    if (!customer) {
+      throw new Error("Customer Id not found");
+    }
+
+    // Update the name property
+    user.customerId = customer;
+    user.isSubscribed = !!customer;
+
+    // Save the updated user
+    const updatedUser = await user.save();
+
+    console.log("User name updated:", updatedUser);
+    res.status(201).json(updatedUser);
+  } catch (error) {
+    res.status(400);
+    throw new Error("Error updating user!");
+  }
+});
+// Generate JWT
+const generateToken = (id) => {
+  return jwt.sign({ id }, process.env.JWT_SECRET, {
+    expiresIn: "30d",
+  });
+};
+
+module.exports = {
+  registerUser,
+  loginUser,
+  updateUser,
+};
