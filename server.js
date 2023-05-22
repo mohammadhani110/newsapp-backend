@@ -35,7 +35,7 @@ const configuration = new Configuration({
 const openai = new OpenAIApi(configuration);
 const MAX_RETRIES = 3;
 
-app.post("/summarize", async (req, res) => {
+app.post("/news/summary", async (req, res) => {
   try {
     const { article } = req.body;
     let retries = 0;

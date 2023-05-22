@@ -1,5 +1,6 @@
 const axios = require("axios");
-
+const { JSDOM } = require("jsdom");
+const { Readability } = require("@mozilla/readability");
 const asyncHandler = require("express-async-handler");
 
 const apiKey = process.env.NEWS_API_KEY;
@@ -7,7 +8,7 @@ const apiKey = process.env.NEWS_API_KEY;
 const getLatestArticles = asyncHandler(async (req, res) => {
   try {
     const response = await axios.get(
-      `https://newsapi.org/v2/top-headlines?popularity&apiKey=${apiKey}`
+      `https://newsapi.org/v2/everything?q=general&sortBy=popularity&apiKey=${apiKey}`
     );
 
     const articles = response.data.articles;
@@ -56,12 +57,35 @@ const getArticlesByCategory = asyncHandler(async (req, res) => {
   try {
     const { category } = req.params;
     const response = await axios.get(
-      `https://newsapi.org/v2/top-headlines?category=${category}&apiKey=${apiKey}`
+      `https://newsapi.org/v2/top-headlines?country=us&category=${category}&apiKey=${apiKey}`
     );
 
     const articles = response.data.articles;
 
     res.json({ articles });
+  } catch (error) {
+    console.error("Error:", error.response.data);
+    res.status(500).json({ error: "An error occurred" });
+  }
+});
+
+const getFullArticle = asyncHandler(async (req, res) => {
+  try {
+    const { url } = req.body;
+    const response = await axios.get(url);
+    console.log("response", response);
+
+    let dom = new JSDOM(response.data, {
+      url,
+    });
+
+    // now pass the DOM document into readability to parse
+    let article = new Readability(dom.window.document).parse();
+
+    // Done! The article content is in the textContent property
+    console.log(article.textContent);
+
+    res.json({ content: article.textContent });
   } catch (error) {
     console.error("Error:", error.response.data);
     res.status(500).json({ error: "An error occurred" });
@@ -106,5 +130,6 @@ module.exports = {
   getTopArticles,
   getArticleCategories,
   getArticlesByCategory,
+  getFullArticle,
   getArticlesSummary,
 };
