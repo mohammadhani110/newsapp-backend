@@ -24,7 +24,11 @@ app.use(bodyParser.json());
 app.use(
   cors({
     credentials: true,
-    origin: ["http://localhost:3000", "https://newsapp-back.cyclic.app", "*"],
+    origin: [
+      "http://localhost:3000",
+      "gitahttps://newsapp-back.cyclic.app",
+      "*",
+    ],
   })
 );
 // createSubscriptionPlans();
