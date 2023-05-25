@@ -19,7 +19,7 @@ const userSchema = mongoose.Schema(
       type: Boolean,
       default: false,
     },
-    customerId: {
+    customer: {
       type: String,
       default: "",
     },

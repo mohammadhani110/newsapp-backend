@@ -72,8 +72,11 @@ const getArticlesByCategory = asyncHandler(async (req, res) => {
 const getFullArticle = asyncHandler(async (req, res) => {
   try {
     const { url } = req.body;
+    if (!url) {
+      res.status(400);
+      throw new Error("url Not Found");
+    }
     const response = await axios.get(url);
-    console.log("response", response);
     let dom = new JSDOM(response.data, {
       url,
     });
@@ -82,7 +85,7 @@ const getFullArticle = asyncHandler(async (req, res) => {
     let article = new Readability(dom.window.document).parse();
 
     // Done! The article content is in the textContent property
-
+    console.log("article", article);
     // res.json({ content: article.textContent });
     res.json({ content: article.content });
   } catch (error) {

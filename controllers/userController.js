@@ -86,14 +86,10 @@ const getUser = asyncHandler(async (req, res) => {
     // Find the user by their ID
     const user = await UserModel.findOne({ _id: id }).select("-password");
 
-    user.token = generateToken(user._id);
-    user.refreshToken = generateRefreshToken(user._id);
-
     if (!user) {
       throw new Error("User not found");
     }
 
-    console.log("User name updated:", user);
     res.status(201).json(user);
   } catch (error) {
     res.status(400);

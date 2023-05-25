@@ -42,7 +42,8 @@ const MAX_RETRIES = 3;
 app.post("/api/news/summary", async (req, res) => {
   try {
     const { article } = req.body;
-    let retries = 0;
+    // let retries = 0;
+
     // const headers = {
     //   "Content-Type": "application/json",
     //   Authorization: `Bearer ${apiKey}`,
@@ -61,39 +62,52 @@ app.post("/api/news/summary", async (req, res) => {
     //   { headers }
     // );
 
-    while (retries < MAX_RETRIES) {
-      try {
-        const response = await openai.createCompletion({
-          model: "text-davinci-003",
-          prompt: `Summarize the article: ${article}`,
-          max_tokens: 200,
-          top_p: 0.7,
-          temperature: 0.3,
-          n: 5,
-          stop: ".",
-          frequency_penalty: 0.0,
-          presence_penalty: 0.0,
-        });
+    // if (retries < MAX_RETRIES) {
+    //   try {
+    //     const response = await openai.createCompletion({
+    //       model: "text-davinci-003",
+    //       prompt: `Summarize the article: ${article}`,
+    //       max_tokens: 200,
+    //       top_p: 0.7,
+    //       temperature: 0.3,
+    //       n: 5,
+    //       stop: ".",
+    //       frequency_penalty: 0.0,
+    //       presence_penalty: 0.0,
+    //     });
+    //     console.log("res-->", response);
+    //     const { choices } = response?.data;
+    //     const bulletPoints = choices?.map((choice) => choice.text.trim());
 
-        const { choices } = response?.data;
-        const bulletPoints = choices?.map((choice) => choice.text.trim());
+    //     res.json({ bulletPoints });
+    //   } catch (error) {
+    //     if (error.response && error.response.status === 429) {
+    //       const retryAfter = parseInt(error.response.headers["retry-after"]);
+    //       await delay(retryAfter * 1000);
+    //       retries++;
+    //     } else {
+    //       console.error("Error:", error);
+    //       return res.status(500).json({ error: "An error occurred" });
+    //     }
+    //   }
+    // }
 
-        res.json({ bulletPoints });
-      } catch (error) {
-        if (error.response && error.response.status === 429) {
-          const retryAfter = parseInt(error.response.headers["retry-after"]);
-          await delay(retryAfter * 1000);
-          retries++;
-        } else {
-          console.error("Error:", error);
-          return res.status(500).json({ error: "An error occurred" });
-        }
-      }
-    }
+    const response = await openai.createCompletion({
+      model: "text-davinci-003",
+      prompt: `Summarize the article: ${article}`,
+      max_tokens: 200,
+      top_p: 0.7,
+      temperature: 0.3,
+      n: 5,
+      stop: ".",
+      frequency_penalty: 0.0,
+      presence_penalty: 0.0,
+    });
 
-    return res.status(429).json({ error: "Too Many Requests" });
+    console.log("res-->", response);
+
+    return res.status(200).json({ response: response.data });
   } catch (error) {
-    console.error("Error:", error);
     return res.status(500).json({ error: "An error occurred" });
   }
 });
@@ -145,7 +159,6 @@ app.post("/api/create-subscription", async (req, res) => {
         { customer: customer.id, isSubscribed: true },
         { new: true }
       );
-      console.log("user updated", user);
       // Save the changes
       await user.save();
       // Subscription and payment were successful
