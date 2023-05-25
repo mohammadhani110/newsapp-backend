@@ -74,7 +74,6 @@ const getFullArticle = asyncHandler(async (req, res) => {
     const { url } = req.body;
     const response = await axios.get(url);
     console.log("response", response);
-
     let dom = new JSDOM(response.data, {
       url,
     });
@@ -83,47 +82,47 @@ const getFullArticle = asyncHandler(async (req, res) => {
     let article = new Readability(dom.window.document).parse();
 
     // Done! The article content is in the textContent property
-    console.log(article.textContent);
 
-    res.json({ content: article.textContent });
+    // res.json({ content: article.textContent });
+    res.json({ content: article.content });
   } catch (error) {
-    console.error("Error:", error.response.data);
-    res.status(500).json({ error: "An error occurred" });
+    console.error("Error:", error);
+    res.status(500).json({ error });
   }
 });
 
-// open ai article summary
-const getArticlesSummary = asyncHandler(async (req, res) => {
-  try {
-    const { article } = req.body;
-    const apiKey = process.env.OPENAI_API_KEY;
-    const headers = {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${apiKey}`,
-    };
+// // open ai article summary
+// const getArticlesSummary = asyncHandler(async (req, res) => {
+//   try {
+//     const { article } = req.body;
+//     const apiKey = process.env.OPENAI_API_KEY;
+//     const headers = {
+//       "Content-Type": "application/json",
+//       Authorization: `Bearer ${apiKey}`,
+//     };
 
-    const response = await axios.post(
-      "https://api.openai.com/v1/engines/davinci-codex/completions",
-      {
-        prompt: `Summarize the article: ${article}`,
-        max_tokens: 100,
-        top_p: 0.7,
-        temperature: 0.3,
-        n: 5, // Number of bullet points you want
-        stop: ".",
-      },
-      { headers }
-    );
+//     const response = await axios.post(
+//       "https://api.openai.com/v1/engines/davinci-codex/completions",
+//       {
+//         prompt: `Summarize the article: ${article}`,
+//         max_tokens: 100,
+//         top_p: 0.7,
+//         temperature: 0.3,
+//         n: 5, // Number of bullet points you want
+//         stop: ".",
+//       },
+//       { headers }
+//     );
 
-    const { choices } = response.data;
-    const bulletPoints = choices.map((choice) => choice.text.trim());
+//     const { choices } = response.data;
+//     const bulletPoints = choices.map((choice) => choice.text.trim());
 
-    res.json({ bulletPoints });
-  } catch (error) {
-    console.error("Error:", error.response.data);
-    res.status(500).json({ error: "An error occurred" });
-  }
-});
+//     res.json({ bulletPoints });
+//   } catch (error) {
+//     console.error("Error:", error.response.data);
+//     res.status(500).json({ error: "An error occurred" });
+//   }
+// });
 
 module.exports = {
   getLatestArticles,
@@ -131,5 +130,5 @@ module.exports = {
   getArticleCategories,
   getArticlesByCategory,
   getFullArticle,
-  getArticlesSummary,
+  // getArticlesSummary,
 };

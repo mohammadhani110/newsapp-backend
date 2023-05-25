@@ -4,7 +4,7 @@ const asyncHandler = require("express-async-handler");
 const UserModel = require("../models/userModel");
 
 //@desc Register new user
-//@route POST /api/users
+//@route POST /api/auth/register
 //@access Public
 const registerUser = asyncHandler(async (req, res) => {
   const { name, email, password } = req.body;
@@ -37,6 +37,7 @@ const registerUser = asyncHandler(async (req, res) => {
       name: user.name,
       email: user.email,
       token: generateToken(user._id),
+      refreshToken: generateRefreshToken(user._id),
     });
   } else {
     res.status(400);
@@ -45,7 +46,7 @@ const registerUser = asyncHandler(async (req, res) => {
 });
 
 //@desc Authenticate a user
-//@route POST /api/users/login
+//@route POST /api/auth/login
 //@access Public
 const loginUser = asyncHandler(async (req, res) => {
   const { email, password } = req.body;
@@ -56,11 +57,19 @@ const loginUser = asyncHandler(async (req, res) => {
   const user = await UserModel.findOne({ email });
 
   if (user && (await bcrypt.compare(password, user.password))) {
+    // Set the refresh token as an HTTP-only cookie
+    // res.cookie("refreshToken", refreshToken, {
+    //   httpOnly: true,
+    //   secure: true, // Enable this in a production environment with HTTPS
+    //   sameSite: "none", // Enable this if your application uses cross-site requests
+    // });
+
     res.status(201).json({
       _id: user.id,
       name: user.name,
       email: user.email,
       token: generateToken(user._id),
+      refreshToken: generateRefreshToken(user._id),
     });
   } else {
     res.status(400);
@@ -68,31 +77,24 @@ const loginUser = asyncHandler(async (req, res) => {
   }
 });
 
-//@desc update user data
-//@route POST /api/users/update
+//@desc fetch user data
+//@route POST /api/auth/user
 //@access Private
-const updateUser = asyncHandler(async (req, res) => {
-  const { customer, email } = req.body;
+const getUser = asyncHandler(async (req, res) => {
+  const { id } = req.body;
   try {
     // Find the user by their ID
-    const user = await UserModel.findOne({ email });
+    const user = await UserModel.findOne({ _id: id }).select("-password");
+
+    user.token = generateToken(user._id);
+    user.refreshToken = generateRefreshToken(user._id);
 
     if (!user) {
       throw new Error("User not found");
     }
-    if (!customer) {
-      throw new Error("Customer Id not found");
-    }
 
-    // Update the name property
-    user.customerId = customer;
-    user.isSubscribed = !!customer;
-
-    // Save the updated user
-    const updatedUser = await user.save();
-
-    console.log("User name updated:", updatedUser);
-    res.status(201).json(updatedUser);
+    console.log("User name updated:", user);
+    res.status(201).json(user);
   } catch (error) {
     res.status(400);
     throw new Error("Error updating user!");
@@ -101,6 +103,12 @@ const updateUser = asyncHandler(async (req, res) => {
 // Generate JWT
 const generateToken = (id) => {
   return jwt.sign({ id }, process.env.JWT_SECRET, {
+    expiresIn: "1d",
+  });
+};
+
+const generateRefreshToken = (id) => {
+  return jwt.sign({ id }, process.env.JWT_REFRESH_SECRET, {
     expiresIn: "30d",
   });
 };
@@ -108,5 +116,5 @@ const generateToken = (id) => {
 module.exports = {
   registerUser,
   loginUser,
-  updateUser,
+  getUser,
 };
