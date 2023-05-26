@@ -36,6 +36,8 @@ const registerUser = asyncHandler(async (req, res) => {
       _id: user.id,
       name: user.name,
       email: user.email,
+      isSubscribed: false,
+      customer: "",
       token: generateToken(user._id),
       refreshToken: generateRefreshToken(user._id),
     });
@@ -68,6 +70,8 @@ const loginUser = asyncHandler(async (req, res) => {
       _id: user.id,
       name: user.name,
       email: user.email,
+      isSubscribed: user.isSubscribed,
+      customer: user.customer,
       token: generateToken(user._id),
       refreshToken: generateRefreshToken(user._id),
     });

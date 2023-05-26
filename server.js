@@ -27,94 +27,106 @@ app.use(
     origin: ["http://localhost:3000", "https://newsapp-front.vercel.app", "*"],
   })
 );
-// createSubscriptionPlans();
-
-// Assuming you have already defined the User model and configured JWT secret and expiration
 
 // open ai summary api endpoint
 
-const configuration = new Configuration({
-  apiKey: process.env.OPENAI_API_KEY,
-});
-const openai = new OpenAIApi(configuration);
-const MAX_RETRIES = 3;
+// const configuration = new Configuration({
+//   apiKey: process.env.OPENAI_API_KEY,
+// });
+// const openai = new OpenAIApi(configuration);
+// const MAX_RETRIES = 3;
+
+// app.post("/api/news/summary", async (req, res) => {
+//   try {
+//     const { article } = req.body;
+//     let retries = 0;
+//     req.headers["Content-Type"] = "application/json";
+//     req.headers["Authorization"] = `Bearer ${process.env.OPENAI_API_KEY}`;
+//     const prompt = `Summarize the article: ${article}\n\nTl;dr:`;
+
+//     let response;
+//     if (retries < MAX_RETRIES) {
+//       try {
+//         response = await openai.createCompletion({
+//           model: "text-davinci-003",
+//           prompt,
+//           max_tokens: 32,
+//           n: 1,
+//           stop: ".",
+//           temperature: 0.5,
+//         });
+//         //// console.log("res-->", response);
+//         //// const { choices } = response?.data;
+//         //// const bulletPoints = choices?.map((choice) => choice.text.trim());
+//         //// res.json({ bulletPoints });
+//       } catch (error) {
+//         if (error.response && error.response.status === 429) {
+//           const retryAfter = parseInt(error.response.headers["retry-after"]);
+//           await delay(retryAfter * 10000);
+//           retries++;
+//         } else {
+//           console.error("Error:", error);
+//           return res.status(500).json({ error: "An error occurred" });
+//         }
+//       }
+//     }
+//     if (!response) {
+//       throw new Error("Exceeded maximum number of retries.");
+//     }
+//     console.log("res-->", response);
+//     const { choices } = response?.data;
+//     const bulletPoints = choices?.map((choice) => choice.text.trim());
+//     // const bulletPoints = response.choices.map((choice) => choice.text.trim());
+
+//     console.log("bulletPoints-->", bulletPoints);
+
+//     return res.status(200).json({ bulletPoints });
+//   } catch (error) {
+//     return res.status(500).json({ error });
+//   }
+// });
+
+// function delay(ms) {
+//   return new Promise((resolve) => setTimeout(resolve, ms));
+// }
 
 app.post("/api/news/summary", async (req, res) => {
   try {
     const { article } = req.body;
-    // let retries = 0;
 
-    // const headers = {
-    //   "Content-Type": "application/json",
-    //   Authorization: `Bearer ${apiKey}`,
-    // };
+    const headers = {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
+    };
 
-    // const response = await axios.post(
-    //   "https://api.openai.com/v1/engines/davinci-codex/completions",
-    //   {
-    //     prompt: `Summarize the article: ${article}`,
-    //     max_tokens: 200,
-    //     top_p: 0.7,
-    //     temperature: 0.3,
-    //     n: 5,
-    //     stop: ".",
-    //   },
-    //   { headers }
-    // );
+    const response = await axios.post(
+      "https://api.openai.com/v1/engines/text-davinci-003/completions",
+      {
+        prompt: `Summarize the article: ${article}\n\nTl;dr:`,
+        max_tokens: 60,
+        top_p: 0.7,
+        temperature: 0.3,
+        n: 5,
+        stop: ".",
+      },
+      { headers }
+    );
 
-    // if (retries < MAX_RETRIES) {
-    //   try {
-    //     const response = await openai.createCompletion({
-    //       model: "text-davinci-003",
-    //       prompt: `Summarize the article: ${article}`,
-    //       max_tokens: 200,
-    //       top_p: 0.7,
-    //       temperature: 0.3,
-    //       n: 5,
-    //       stop: ".",
-    //       frequency_penalty: 0.0,
-    //       presence_penalty: 0.0,
-    //     });
-    //     console.log("res-->", response);
-    //     const { choices } = response?.data;
-    //     const bulletPoints = choices?.map((choice) => choice.text.trim());
+    console.log("response-->", response);
+    const bulletPoints = response.choices.map((choice) => choice.text.trim());
 
-    //     res.json({ bulletPoints });
-    //   } catch (error) {
-    //     if (error.response && error.response.status === 429) {
-    //       const retryAfter = parseInt(error.response.headers["retry-after"]);
-    //       await delay(retryAfter * 1000);
-    //       retries++;
-    //     } else {
-    //       console.error("Error:", error);
-    //       return res.status(500).json({ error: "An error occurred" });
-    //     }
-    //   }
-    // }
+    console.log("bulletPoints-->", bulletPoints);
 
-    const response = await openai.createCompletion({
-      model: "text-davinci-003",
-      prompt: `Summarize the article: ${article}`,
-      max_tokens: 200,
-      top_p: 0.7,
-      temperature: 0.3,
-      n: 5,
-      stop: ".",
-      frequency_penalty: 0.0,
-      presence_penalty: 0.0,
-    });
-
-    console.log("res-->", response);
-
-    return res.status(200).json({ response: response.data });
+    res.json({ bulletPoints });
   } catch (error) {
-    return res.status(500).json({ error: "An error occurred" });
+    if (error.response && error.response.status === 429) {
+      return res.status(429).json({ error: "Too many Requests" });
+    } else {
+      console.error("Error:", error);
+      return res.status(500).json({ error: "An error occurred" });
+    }
   }
 });
-
-function delay(ms) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
 
 app.post("/api/create-subscription", async (req, res) => {
   const { paymentMethodId, priceId, userId, email } = req.body;
@@ -154,11 +166,16 @@ app.post("/api/create-subscription", async (req, res) => {
         clientSecret: paymentIntent.client_secret,
       });
     } else if (paymentIntent.status === "succeeded") {
-      const user = await User.findOneAndUpdate(
-        { _id: userId },
+      const user = await User.findByIdAndUpdate(
+        userId,
         { customer: customer.id, isSubscribed: true },
         { new: true }
       );
+      // const user = await User.findOneAndUpdate(
+      //   { _id: userId },
+      //   { customer: customer.id, isSubscribed: true },
+      //   { new: true }
+      // );
       // Save the changes
       await user.save();
       // Subscription and payment were successful
