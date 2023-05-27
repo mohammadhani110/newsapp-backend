@@ -24,7 +24,16 @@ app.use(bodyParser.json());
 app.use(
   cors({
     credentials: true,
-    origin: ["http://localhost:3000", "https://newsapp-front.vercel.app", "*"],
+    origin: [
+      "http://localhost:3000",
+      "https://newsapp-front.vercel.app",
+      "https://newsapp-back.cyclic.app/api/news/by-category/:category",
+      "https://newsapp-back.cyclic.app/api/news/latest",
+      "https://newsapp-back.cyclic.app/api/news/top",
+      "https://newsapp-back.cyclic.app/api/news/categories",
+      "https://newsapp-back.cyclic.app/api/news/get-content",
+      "*",
+    ],
   })
 );
 
